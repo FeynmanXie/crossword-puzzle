@@ -1,46 +1,6 @@
 // 运动主题填字游戏词条数据库
 export const sportsWords = [
     {
-        text: "SOCCER",
-        hint: "The most popular sport in the world, also known as football outside North America"
-    },
-    {
-        text: "BASKET",
-        hint: "A scoring target in basketball mounted 10 feet high"
-    },
-    {
-        text: "SERVE",
-        hint: "The initial shot that starts a point in tennis or volleyball"
-    },
-    {
-        text: "PITCH",
-        hint: "The throwing motion in baseball to start each play"
-    },
-    {
-        text: "SPRINT",
-        hint: "A short-distance running race at full speed"
-    },
-    {
-        text: "DUNK",
-        hint: "A basketball shot where player jumps and powers the ball down through the hoop"
-    },
-    {
-        text: "GOAL",
-        hint: "A scoring point in many sports like soccer, hockey, and rugby"
-    },
-    {
-        text: "COURT",
-        hint: "The playing area in tennis, basketball, and volleyball"
-    },
-    {
-        text: "TRACK",
-        hint: "The oval path where running races take place"
-    },
-    {
-        text: "MEDAL",
-        hint: "A metal award given to top performers in sporting events"
-    },
-    {
         text: "TEAM",
         hint: "A group of players working together in a sport"
     },
@@ -49,75 +9,75 @@ export const sportsWords = [
         hint: "A competition of speed between participants"
     },
     {
-        text: "SCORE",
-        hint: "The number of points achieved in a game"
+        text: "GAME",
+        hint: "A competitive sporting event"
     },
     {
-        text: "WIN",
-        hint: "To achieve victory in a competition"
+        text: "BALL",
+        hint: "A round object used in many sports"
     },
     {
-        text: "JUMP",
-        hint: "To propel oneself upward off the ground"
+        text: "GOAL",
+        hint: "A scoring point in many sports like soccer and hockey"
+    },
+    {
+        text: "PLAY",
+        hint: "To take part in a sport or game"
     },
     {
         text: "SWIM",
         hint: "To move through water using body movements"
     },
     {
-        text: "COACH",
-        hint: "A person who trains and instructs athletes"
+        text: "JUMP",
+        hint: "To push off the ground with force"
     },
     {
-        text: "FIELD",
-        hint: "The playing area in outdoor sports"
+        text: "RING",
+        hint: "A circular target or equipment in sports"
     },
     {
-        text: "GAME",
-        hint: "A competitive sporting event"
+        text: "SHOT",
+        hint: "An attempt to score in sports"
     },
     {
-        text: "SPORT",
-        hint: "Physical activity governed by rules and often competitive"
+        text: "PASS",
+        hint: "To send the ball to another player"
     },
     {
-        text: "ATHLETE",
-        hint: "A person who competes in sports"
+        text: "SAVE",
+        hint: "To prevent the other team from scoring"
     },
     {
-        text: "OLYMPIC",
-        hint: "Related to the world's largest multi-sport event held every four years"
+        text: "STAR",
+        hint: "An exceptional athlete"
     },
     {
-        text: "FITNESS",
-        hint: "The condition of being physically fit and healthy"
+        text: "PACE",
+        hint: "Speed of movement in a race or game"
     },
     {
-        text: "TENNIS",
-        hint: "A racket sport played between two or four players"
+        text: "GEAR",
+        hint: "Equipment used in sports"
     },
     {
-        text: "BOXING",
-        hint: "A combat sport involving punches between two fighters"
+        text: "BEAT",
+        hint: "To defeat an opponent"
     },
     {
-        text: "RUGBY",
-        hint: "A team sport with an oval ball and physical contact"
+        text: "TAPE",
+        hint: "The finish line marker in races"
     },
     {
-        text: "GOLF",
-        hint: "A sport where players hit a small ball into holes with clubs"
+        text: "LANE",
+        hint: "A marked path for racing or swimming"
     },
     {
-        text: "YOGA",
-        hint: "A practice combining physical postures, breathing techniques, and meditation"
+        text: "MATE",
+        hint: "A fellow player on your team"
     },
     {
-        text: "SKATE",
-        hint: "To glide on ice or wheels using special footwear"
-    },
-    {
-        text: "BALL",
-        hint: "A round object used in many sports"
+        text: "AREA",
+        hint: "A specific section of the playing field"
     }
 ]; 
