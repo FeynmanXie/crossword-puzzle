@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Sports Crossword Puzzle</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -38,8 +41,13 @@
     </div>
 
     <script type="module">
-        import { PuzzleGenerator } from './js/PuzzleGenerator.js';
-        import { sportsWords } from './js/sports_words.js';
+        // 添加随机参数以防止缓存
+        const version = new Date().getTime();
+        const PuzzleGeneratorModule = await import('./js/PuzzleGenerator.js?v=' + version);
+        const SportsWordsModule = await import('./js/sports_words.js?v=' + version);
+        
+        const PuzzleGenerator = PuzzleGeneratorModule.PuzzleGenerator;
+        const sportsWords = SportsWordsModule.sportsWords;
 
         let puzzleData = null;
         let generator = new PuzzleGenerator();
@@ -80,7 +88,7 @@
         function selectRandomWords() {
             selectedWords.clear();
             const shuffled = [...sportsWords].sort(() => 0.5 - Math.random());
-            for (let i = 0; i < Math.min(8, shuffled.length); i++) {
+            for (let i = 0; i < Math.min(4, shuffled.length); i++) {
                 selectedWords.add(shuffled[i]);
             }
             displayWordList();

@@ -1,8 +1,9 @@
 // 运动主题填字游戏词条数据库
 export const sportsWords = [
+    // 基础动作词（都包含A）
     {
-        text: "TEAM",
-        hint: "A group of players working together in a sport"
+        text: "PLAY",
+        hint: "To take part in a sport or game"
     },
     {
         text: "RACE",
@@ -13,16 +14,70 @@ export const sportsWords = [
         hint: "A competitive sporting event"
     },
     {
+        text: "TEAM",
+        hint: "A group of players working together"
+    },
+    
+    // 包含E的词组
+    {
+        text: "MEET",
+        hint: "A sports competition event"
+    },
+    {
+        text: "STEP",
+        hint: "A basic movement in exercise"
+    },
+    {
+        text: "SEND",
+        hint: "To pass or throw the ball"
+    },
+    {
+        text: "LEAD",
+        hint: "To be ahead in a competition"
+    },
+
+    // 包含R的词组
+    {
+        text: "RIDE",
+        hint: "To move on a bicycle or horse"
+    },
+    {
+        text: "ROLL",
+        hint: "To move by turning over and over"
+    },
+    {
+        text: "ROPE",
+        hint: "Equipment used for jumping or climbing"
+    },
+    {
+        text: "RULE",
+        hint: "A regulation in sports"
+    },
+
+    // 包含T的词组
+    {
+        text: "TIME",
+        hint: "Duration or record in a race"
+    },
+    {
+        text: "TIRE",
+        hint: "To become physically exhausted"
+    },
+    {
+        text: "TEAM",
+        hint: "A group working together in sports"
+    },
+    {
+        text: "TURN",
+        hint: "To change direction in movement"
+    },
+    {
         text: "BALL",
         hint: "A round object used in many sports"
     },
     {
         text: "GOAL",
         hint: "A scoring point in many sports like soccer and hockey"
-    },
-    {
-        text: "PLAY",
-        hint: "To take part in a sport or game"
     },
     {
         text: "SWIM",
