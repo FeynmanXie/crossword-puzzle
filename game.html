@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Crossword Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- 祝贺动画覆盖层 - 移到最前面确保显示在最上层 -->
+    <div id="celebration" class="celebration-overlay">
+        <div class="celebration-content">
+            <h1 class="celebration-title">Congratulations!</h1>
+            <p class="celebration-message">You've completed the puzzle!</p>
+        </div>
+        <!-- 彩带元素 -->
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+        <div class="confetti"></div>
+    </div>
+
+    <div class="container">
+        <header class="game-header">
+            <h1>Crossword Puzzle</h1>
+            <div class="game-controls">
+                <button id="check-button" class="button" onclick="checkAnswers()">Check Answers</button>
+                <button id="hint-button" class="button" onclick="showHint()">Show Hint (3)</button>
+                <button class="button" onclick="window.location.href='index.html'">New Puzzle</button>
+            </div>
+        </header>
+
+        <div class="game-content">
+            <div class="grid-container">
+                <div id="crossword-grid" class="crossword-grid"></div>
+            </div>
+            
+            <div class="clues-container">
+                <div class="clues-section">
+                    <h2>Across</h2>
+                    <div id="across-clues" class="clues-list"></div>
+                </div>
+                <div class="clues-section">
+                    <h2>Down</h2>
+                    <div id="down-clues" class="clues-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="status" class="game-status"></div>
+    </div>
+
+    <script>
+        let gameData = null;
+        let hintsRemaining = 3;
+        let isGameComplete = false;
+        let currentFocusedInput = null;
+        
+        // 从URL获取游戏数据
+        function loadGameData() {
+            const params = new URLSearchParams(window.location.search);
+            const data = params.get('data');
+            if (data) {
+                try {
+                    gameData = JSON.parse(decodeURIComponent(data));
+                    displayGame(gameData);
+                    // 确保celebration一开始是隐藏的
+                    const celebration = document.getElementById('celebration');
+                    celebration.style.display = 'none';
+                    celebration.classList.remove('show');
+                } catch (error) {
+                    showStatus('Failed to load game data', true);
+                }
+            } else {
+                showStatus('No game data found', true);
+            }
+        }
+
+        function displayGame(data) {
+            displayGrid(data.grid);
+            displayClues(data.words);
+            // 移除任何可能的祝贺状态
+            isGameComplete = false;
+            const status = document.getElementById('status');
+            status.textContent = '';
+            status.className = 'game-status';
+            setupKeyboardNavigation();
+        }
+
+        function displayGrid(grid) {
+            const container = document.getElementById('crossword-grid');
+            container.innerHTML = '';
+            
+            container.style.gridTemplateRows = `repeat(${grid.size}, 1fr)`;
+            container.style.gridTemplateColumns = `repeat(${grid.size}, 1fr)`;
+            
+            for (let i = 0; i < grid.size; i++) {
+                for (let j = 0; j < grid.size; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    if (grid.grid[i][j] === null) {
+                        cell.className += ' empty';
+                    } else {
+                        const input = document.createElement('input');
+                        input.maxLength = 1;
+                        input.dataset.row = i;
+                        input.dataset.col = j;
+                        input.dataset.answer = grid.grid[i][j];
+                        input.addEventListener('input', handleInput);
+                        input.addEventListener('focus', handleFocus);
+                        input.addEventListener('keydown', handleKeyDown);
+                        cell.appendChild(input);
+                        
+                        // 添加单词编号
+                        const word = grid.placedWords.find(w => 
+                            (w.horizontal && w.row === i && w.col === j) ||
+                            (!w.horizontal && w.row === i && w.col === j)
+                        );
+                        
+                        if (word && (word.col === j && word.row === i)) {
+                            const number = document.createElement('span');
+                            number.className = 'number';
+                            number.textContent = word.number;
+                            cell.appendChild(number);
+                        }
+                    }
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        function displayClues(words) {
+            const acrossClues = document.getElementById('across-clues');
+            const downClues = document.getElementById('down-clues');
+            
+            acrossClues.innerHTML = '';
+            downClues.innerHTML = '';
+            
+            words.forEach(word => {
+                const clue = document.createElement('div');
+                clue.className = 'clue-item';
+                clue.innerHTML = `<span class="clue-number">${word.number}.</span> ${word.hint}`;
+                
+                if (word.horizontal) {
+                    acrossClues.appendChild(clue);
+                } else {
+                    downClues.appendChild(clue);
+                }
+            });
+        }
+
+        function handleInput(event) {
+            const input = event.target;
+            input.value = input.value.toUpperCase();
+            
+            if (input.value) {
+                const isCorrect = input.value === input.dataset.answer;
+                input.parentElement.classList.toggle('correct', isCorrect);
+                input.parentElement.classList.toggle('incorrect', !isCorrect);
+            } else {
+                input.parentElement.classList.remove('correct', 'incorrect');
+            }
+        }
+
+        function handleFocus(event) {
+            currentFocusedInput = event;
+            highlightRelatedCells(event.target);
+        }
+
+        function highlightRelatedCells(input) {
+            // 移除之前的高亮
+            document.querySelectorAll('.cell.highlighted').forEach(cell => {
+                cell.classList.remove('highlighted');
+            });
+
+            const row = parseInt(input.dataset.row);
+            const col = parseInt(input.dataset.col);
+
+            // 找到当前单元格所属的单词
+            const relatedWord = gameData.grid.placedWords.find(word => {
+                if (word.horizontal) {
+                    return row === word.row && col >= word.col && col < word.col + word.text.length;
+                } else {
+                    return col === word.col && row >= word.row && row < word.row + word.text.length;
+                }
+            });
+
+            if (relatedWord) {
+                // 高亮相关单元格
+                const cells = document.querySelectorAll('.cell input');
+                cells.forEach(cell => {
+                    const cellRow = parseInt(cell.dataset.row);
+                    const cellCol = parseInt(cell.dataset.col);
+                    
+                    if (relatedWord.horizontal) {
+                        if (cellRow === relatedWord.row && 
+                            cellCol >= relatedWord.col && 
+                            cellCol < relatedWord.col + relatedWord.text.length) {
+                            cell.parentElement.classList.add('highlighted');
+                        }
+                    } else {
+                        if (cellCol === relatedWord.col && 
+                            cellRow >= relatedWord.row && 
+                            cellRow < relatedWord.row + relatedWord.text.length) {
+                            cell.parentElement.classList.add('highlighted');
+                        }
+                    }
+                });
+            }
+        }
+
+        function handleKeyDown(event) {
+            const input = event.target;
+            const row = parseInt(input.dataset.row);
+            const col = parseInt(input.dataset.col);
+
+            switch(event.key) {
+                case 'ArrowRight':
+                    moveFocus(row, col + 1);
+                    event.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                    moveFocus(row, col - 1);
+                    event.preventDefault();
+                    break;
+                case 'ArrowUp':
+                    moveFocus(row - 1, col);
+                    event.preventDefault();
+                    break;
+                case 'ArrowDown':
+                    moveFocus(row + 1, col);
+                    event.preventDefault();
+                    break;
+                case 'Backspace':
+                    if (!input.value) {
+                        moveFocus(row, col - 1);
+                        event.preventDefault();
+                    }
+                    break;
+            }
+        }
+
+        function moveFocus(row, col) {
+            const nextInput = document.querySelector(
+                `.cell input[data-row="${row}"][data-col="${col}"]`
+            );
+            if (nextInput) {
+                nextInput.focus();
+            }
+        }
+
+        function setupKeyboardNavigation() {
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Tab') {
+                    event.preventDefault();
+                    const inputs = Array.from(document.querySelectorAll('.cell input'));
+                    const currentIndex = inputs.indexOf(document.activeElement);
+                    const nextIndex = event.shiftKey ? 
+                        (currentIndex - 1 + inputs.length) % inputs.length : 
+                        (currentIndex + 1) % inputs.length;
+                    inputs[nextIndex].focus();
+                }
+            });
+        }
+
+        function checkAnswers() {
+            if (isGameComplete) return;
+            
+            const inputs = document.querySelectorAll('.cell input');
+            const emptyInputs = Array.from(inputs).filter(input => !input.value.trim());
+            
+            if (emptyInputs.length > 0) {
+                showStatus('Please fill in all cells before checking', true);
+                return;
+            }
+
+            const allCorrect = Array.from(inputs).every(input => 
+                input.value.toUpperCase() === input.dataset.answer
+            );
+
+            if (allCorrect) {
+                isGameComplete = true;
+                // 跳转到祝贺页面
+                window.location.href = 'congratulations.html';
+            } else {
+                // 跳转到错误页面
+                window.location.href = 'error.html';
+            }
+        }
+
+        function resetGameState() {
+            isGameComplete = false;
+            
+            // 重置所有游戏相关的状态
+            const inputs = document.querySelectorAll('.cell input');
+            inputs.forEach(input => {
+                input.value = '';
+                input.disabled = false;
+                input.parentElement.classList.remove('correct', 'incorrect');
+            });
+            
+            // 重置按钮状态
+            document.getElementById('check-button').disabled = false;
+            
+            // 重置提示次数
+            hintsRemaining = 3;
+            updateHintButton();
+            
+            // 清除状态消息
+            const status = document.getElementById('status');
+            status.textContent = '';
+            status.className = 'game-status';
+        }
+
+        function updateHintButton() {
+            const hintButton = document.getElementById('hint-button');
+            hintButton.textContent = `Show Hint (${hintsRemaining})`;
+            if (hintsRemaining <= 0) {
+                hintButton.disabled = true;
+                hintButton.classList.add('disabled');
+            }
+        }
+
+        function showHint() {
+            if (hintsRemaining <= 0) {
+                showStatus('No hints remaining!', true);
+                return;
+            }
+
+            const inputs = document.querySelectorAll('.cell input');
+            const emptyInputs = Array.from(inputs).filter(input => !input.value.trim());
+            
+            if (emptyInputs.length > 0) {
+                const randomInput = emptyInputs[Math.floor(Math.random() * emptyInputs.length)];
+                const answer = randomInput.dataset.answer;
+                randomInput.value = answer;
+                randomInput.dispatchEvent(new Event('input')); // 触发input事件
+                randomInput.parentElement.classList.add('correct');
+                hintsRemaining--;
+                updateHintButton();
+                
+                // 检查是否所有格子都已填写
+                const remainingEmpty = Array.from(inputs).filter(input => !input.value.trim());
+                if (remainingEmpty.length === 0) {
+                    showStatus('All cells filled! You can check your answers now.', false);
+                }
+            }
+        }
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'game-status ' + (isError ? 'error' : 'success');
+            
+            setTimeout(() => {
+                status.textContent = '';
+                status.className = 'game-status';
+            }, 3000);
+        }
+
+        // 确保函数在全局范围内可用
+        window.checkAnswers = checkAnswers;
+        window.showHint = showHint;
+
+        // 页面加载时初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGameData();
+            // 确保celebration一开始是隐藏的
+            const celebration = document.getElementById('celebration');
+            celebration.style.display = 'none';
+            celebration.classList.remove('show');
+        });
+    </script>
+</body>
+</html> 

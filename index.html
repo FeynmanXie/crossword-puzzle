@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Crossword Puzzle</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Sports Crossword Puzzle</h1>
+            <p class="subtitle">Test your knowledge of sports and fitness!</p>
+        </header>
+
+        <div class="generator-content">
+            <div class="word-selection-section">
+                <h2>Available Sports Words</h2>
+                <div id="word-list" class="word-list">
+                    <!-- 词条列表将在这里动态生成 -->
+                </div>
+                <div class="controls">
+                    <button class="button primary" onclick="generatePuzzle()">Generate Puzzle</button>
+                    <button class="button" onclick="selectRandomWords()">Random Selection</button>
+                </div>
+            </div>
+
+            <div id="preview-section" class="preview-section" style="display: none;">
+                <h2>Preview</h2>
+                <div class="grid-container">
+                    <div id="preview-grid" class="crossword-grid"></div>
+                </div>
+                <button class="button primary" onclick="startGame()">Start Game</button>
+            </div>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script type="module">
+        import { PuzzleGenerator } from './js/PuzzleGenerator.js';
+        import { sportsWords } from './js/sports_words.js';
+
+        let puzzleData = null;
+        let generator = new PuzzleGenerator();
+        let selectedWords = new Set();
+
+        // 显示可用的运动词条
+        function displayWordList() {
+            const container = document.getElementById('word-list');
+            container.innerHTML = '';
+            
+            sportsWords.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word-item' + (selectedWords.has(word) ? ' selected' : '');
+                wordElement.innerHTML = `
+                    <span class="word-text">${word.text}</span>
+                    <span class="word-hint">${word.hint}</span>
+                `;
+                wordElement.addEventListener('click', () => toggleWordSelection(word));
+                container.appendChild(wordElement);
+            });
+        }
+
+        // 切换单词选择状态
+        function toggleWordSelection(word) {
+            if (selectedWords.has(word)) {
+                selectedWords.delete(word);
+            } else if (selectedWords.size < 8) {
+                selectedWords.add(word);
+            } else {
+                showStatus('Maximum 8 words can be selected', true);
+                return;
+            }
+            displayWordList();
+            updateGenerateButton();
+        }
+
+        // 随机选择单词
+        function selectRandomWords() {
+            selectedWords.clear();
+            const shuffled = [...sportsWords].sort(() => 0.5 - Math.random());
+            for (let i = 0; i < Math.min(8, shuffled.length); i++) {
+                selectedWords.add(shuffled[i]);
+            }
+            displayWordList();
+            updateGenerateButton();
+        }
+
+        // 更新生成按钮状态
+        function updateGenerateButton() {
+            const generateButton = document.querySelector('.button.primary');
+            generateButton.disabled = selectedWords.size < 2;
+        }
+
+        // 生成填字游戏
+        function generatePuzzle() {
+            if (selectedWords.size < 2) {
+                showStatus('Please select at least 2 words', true);
+                return;
+            }
+
+            try {
+                puzzleData = generator.generatePuzzle([...selectedWords]);
+                showPreview(puzzleData);
+                showStatus('Puzzle generated successfully!');
+            } catch (error) {
+                showStatus('Failed to generate puzzle: ' + error.message, true);
+            }
+        }
+
+        function showPreview(data) {
+            const previewSection = document.getElementById('preview-section');
+            const previewGrid = document.getElementById('preview-grid');
+            previewSection.style.display = 'block';
+            
+            previewGrid.innerHTML = '';
+            previewGrid.style.gridTemplateRows = `repeat(${data.grid.size}, 1fr)`;
+            previewGrid.style.gridTemplateColumns = `repeat(${data.grid.size}, 1fr)`;
+            
+            for (let i = 0; i < data.grid.size; i++) {
+                for (let j = 0; j < data.grid.size; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    if (data.grid.grid[i][j] === null) {
+                        cell.className += ' empty';
+                    } else {
+                        cell.textContent = data.grid.grid[i][j];
+                        
+                        const word = data.grid.placedWords.find(w => 
+                            (w.horizontal && w.row === i && w.col === j) ||
+                            (!w.horizontal && w.row === i && w.col === j)
+                        );
+                        
+                        if (word && (word.col === j && word.row === i)) {
+                            const number = document.createElement('span');
+                            number.className = 'number';
+                            number.textContent = word.number;
+                            cell.appendChild(number);
+                        }
+                    }
+                    previewGrid.appendChild(cell);
+                }
+            }
+        }
+
+        function startGame() {
+            if (!puzzleData) {
+                showStatus('Please generate a puzzle first', true);
+                return;
+            }
+
+            const gameData = encodeURIComponent(JSON.stringify(puzzleData));
+            window.location.href = `game.html?data=${gameData}`;
+        }
+
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + (isError ? 'error' : 'success');
+            
+            setTimeout(() => {
+                status.textContent = '';
+                status.className = 'status';
+            }, 3000);
+        }
+
+        // 将函数暴露给全局作用域
+        window.generatePuzzle = generatePuzzle;
+        window.selectRandomWords = selectRandomWords;
+        window.startGame = startGame;
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            displayWordList();
+            updateGenerateButton();
+        });
+    </script>
+
+    <style>
+        .subtitle {
+            text-align: center;
+            color: var(--text-color);
+            margin-top: 10px;
+            font-size: 1.2em;
+        }
+
+        .word-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .word-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .word-item:hover {
+            background-color: rgba(33, 150, 243, 0.1);
+        }
+
+        .word-item.selected {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .word-text {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .word-hint {
+            font-size: 0.9em;
+            color: inherit;
+            opacity: 0.8;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .word-list {
+                grid-template-columns: 1fr;
+                max-height: 300px;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .controls .button {
+                width: 100%;
+            }
+        }
+    </style>
+</body>
+</html> 

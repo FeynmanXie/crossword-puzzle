@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Try Again!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .error-container {
+            position: relative;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .error-title {
+            font-size: 5em;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,0,0,0.8);
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: scale(0.5);
+            animation: glitchIn 0.5s ease forwards;
+        }
+
+        .error-message {
+            font-size: 2em;
+            color: #ffebee;
+            text-shadow: 0 0 10px rgba(255,0,0,0.5);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: glitchSlideUp 0.5s ease 0.3s forwards;
+        }
+
+        .glitch-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,0,0,0.1);
+            animation: glitch 1s infinite;
+            pointer-events: none;
+        }
+
+        .lightning {
+            position: absolute;
+            width: 2px;
+            height: 100vh;
+            background: linear-gradient(to bottom, transparent, #f00, transparent);
+            opacity: 0;
+        }
+
+        @keyframes glitchIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) skew(10deg);
+                text-shadow: none;
+            }
+            20% {
+                transform: scale(1.2) skew(-20deg);
+                text-shadow: 0 0 50px #f00;
+            }
+            40% {
+                transform: scale(0.8) skew(40deg);
+                text-shadow: 0 0 30px #f00;
+            }
+            60% {
+                transform: scale(1.1) skew(-10deg);
+                text-shadow: 0 0 40px #f00;
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) skew(0);
+                text-shadow: 0 0 20px #f00;
+            }
+        }
+
+        @keyframes glitchSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) skew(5deg);
+            }
+            20% {
+                transform: translateY(-10px) skew(-10deg);
+            }
+            40% {
+                transform: translateY(15px) skew(15deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) skew(0);
+            }
+        }
+
+        @keyframes glitch {
+            0% {
+                transform: translateX(0) skew(0);
+                opacity: 0;
+            }
+            20% {
+                transform: translateX(-20px) skew(10deg);
+                opacity: 0.3;
+            }
+            40% {
+                transform: translateX(20px) skew(-10deg);
+                opacity: 0.1;
+            }
+            60% {
+                transform: translateX(-15px) skew(5deg);
+                opacity: 0.2;
+            }
+            80% {
+                transform: translateX(15px) skew(-5deg);
+                opacity: 0.1;
+            }
+            100% {
+                transform: translateX(0) skew(0);
+                opacity: 0;
+            }
+        }
+
+        @keyframes lightning {
+            0% {
+                opacity: 0;
+                transform: translateX(-100vw) rotate(45deg);
+            }
+            10% {
+                opacity: 1;
+            }
+            20% {
+                transform: translateX(100vw) rotate(45deg);
+                opacity: 0;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .error-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #300, #000);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+
+        /* 创建多个闪电效果 */
+        .lightning:nth-child(1) { animation: lightning 3s infinite; animation-delay: 0s; }
+        .lightning:nth-child(2) { animation: lightning 3s infinite; animation-delay: 0.5s; }
+        .lightning:nth-child(3) { animation: lightning 3s infinite; animation-delay: 1s; }
+        .lightning:nth-child(4) { animation: lightning 3s infinite; animation-delay: 1.5s; }
+        .lightning:nth-child(5) { animation: lightning 3s infinite; animation-delay: 2s; }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .error-title {
+                font-size: 3em;
+            }
+            .error-message {
+                font-size: 1.5em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .error-title {
+                font-size: 2.5em;
+            }
+            .error-message {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-bg"></div>
+    <div class="glitch-effect"></div>
+    
+    <!-- 闪电效果 -->
+    <div class="lightning"></div>
+    <div class="lightning"></div>
+    <div class="lightning"></div>
+    <div class="lightning"></div>
+    <div class="lightning"></div>
+
+    <div class="error-container">
+        <h1 class="error-title">Try Again!</h1>
+        <p class="error-message">Some answers are incorrect...</p>
+    </div>
+
+    <script>
+        // 创建故障效果
+        function createGlitch() {
+            const glitch = document.createElement('div');
+            glitch.className = 'glitch-effect';
+            document.body.appendChild(glitch);
+
+            setTimeout(() => {
+                glitch.remove();
+            }, 1000);
+        }
+
+        // 每500ms创建一个新的故障效果
+        setInterval(createGlitch, 500);
+
+        // 2秒后返回游戏页面
+        setTimeout(() => {
+            window.history.back();
+        }, 2000);
+    </script>
+</body>
+</html> 

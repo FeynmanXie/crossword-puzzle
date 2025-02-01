@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Congratulations!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .celebration-container {
+            position: relative;
+            text-align: center;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .celebration-title {
+            font-size: 5em;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.8);
+            animation: glow 2s ease-in-out infinite alternate;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: scale(0.5);
+            animation: popIn 0.5s ease forwards;
+        }
+
+        .celebration-message {
+            font-size: 2em;
+            color: #E3F2FD;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 0.5s ease 0.3s forwards;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confetti 5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px #fff,
+                            0 0 30px #2196F3,
+                            0 0 40px #2196F3,
+                            0 0 50px #2196F3;
+            }
+            to {
+                text-shadow: 0 0 30px #fff,
+                            0 0 40px #64B5F6,
+                            0 0 50px #64B5F6,
+                            0 0 60px #64B5F6;
+            }
+        }
+
+        @keyframes confetti {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes slideUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .confetti:nth-child(2n) { background: #f44336; left: 20%; animation-delay: 0.2s; }
+        .confetti:nth-child(3n) { background: #4CAF50; left: 40%; animation-delay: 0.4s; }
+        .confetti:nth-child(4n) { background: #2196F3; left: 60%; animation-delay: 0.6s; }
+        .confetti:nth-child(5n) { background: #FFC107; left: 80%; animation-delay: 0.8s; }
+        .confetti:nth-child(6n) { background: #9C27B0; left: 90%; animation-delay: 1s; }
+
+        .firework {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: firework 1s ease-out infinite;
+        }
+
+        @keyframes firework {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="celebration-container">
+        <h1 class="celebration-title">Congratulations!</h1>
+        <p class="celebration-message">You've completed the puzzle!</p>
+    </div>
+
+    <!-- 彩带元素 -->
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+    <div class="confetti"></div>
+
+    <script>
+        // 创建烟花效果
+        function createFirework() {
+            const firework = document.createElement('div');
+            firework.className = 'firework';
+            firework.style.left = Math.random() * window.innerWidth + 'px';
+            firework.style.top = Math.random() * window.innerHeight + 'px';
+            firework.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            firework.style.setProperty('--tx', (Math.random() * 200 - 100) + 'px');
+            firework.style.setProperty('--ty', (Math.random() * 200 - 100) + 'px');
+            document.body.appendChild(firework);
+
+            setTimeout(() => {
+                firework.remove();
+            }, 1000);
+        }
+
+        // 每100ms创建一个新烟花
+        setInterval(createFirework, 100);
+
+        // 3秒后跳转回主页
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 3000);
+    </script>
+</body>
+</html> 
