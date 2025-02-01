@@ -2,6 +2,7 @@
 export class PuzzleGenerator {
     constructor() {
         this.reset();
+        this.maxAttempts = 100; // 最大尝试次数
     }
 
     reset() {
@@ -25,80 +26,122 @@ export class PuzzleGenerator {
 
         // 计算初始网格大小
         this.size = Math.max(
-            sortedWords[0].text.length + 2,
-            Math.ceil(Math.sqrt(words.reduce((sum, word) => sum + word.text.length, 0) * 1.5))
+            sortedWords[0].text.length + 4, // 增加边距
+            Math.ceil(Math.sqrt(words.reduce((sum, word) => sum + word.text.length, 0) * 2.0)) // 增加空间系数
         );
 
-        // 创建空网格
-        this.grid = Array(this.size).fill(null)
-            .map(() => Array(this.size).fill(null));
+        // 多次尝试生成拼图
+        for (let attempt = 0; attempt < this.maxAttempts; attempt++) {
+            try {
+                // 创建空网格
+                this.grid = Array(this.size).fill(null)
+                    .map(() => Array(this.size).fill(null));
+                this.placedWords = [];
+                this.wordNumber = 1;
 
-        // 放置第一个单词在中间
-        const firstWord = sortedWords[0];
-        const startRow = Math.floor(this.size / 2);
-        const startCol = Math.floor((this.size - firstWord.text.length) / 2);
-        
-        this.placeWord(firstWord, startRow, startCol, true);
+                // 随机选择起始位置
+                const firstWord = sortedWords[0];
+                const startRow = Math.floor(this.size / 2) + Math.floor(Math.random() * 3) - 1;
+                const startCol = Math.floor((this.size - firstWord.text.length) / 2) + Math.floor(Math.random() * 3) - 1;
+                
+                this.placeWord(firstWord, startRow, startCol, true);
 
-        // 尝试放置其余单词
-        for (let i = 1; i < sortedWords.length; i++) {
-            const word = sortedWords[i];
-            let placed = false;
-
-            // 遍历已放置的单词，寻找交叉点
-            for (const placedWord of this.placedWords) {
-                for (let j = 0; j < word.text.length; j++) {
-                    for (let k = 0; k < placedWord.text.length; k++) {
-                        if (word.text[j] === placedWord.text[k]) {
-                            // 尝试在交叉点放置
-                            if (placedWord.horizontal) {
-                                // 垂直放置新单词
-                                const row = placedWord.row - j;
-                                const col = placedWord.col + k;
-                                if (this.canPlaceWord(word.text, row, col, false)) {
-                                    this.placeWord(word, row, col, false);
-                                    placed = true;
-                                    break;
-                                }
-                            } else {
-                                // 水平放置新单词
-                                const row = placedWord.row + k;
-                                const col = placedWord.col - j;
-                                if (this.canPlaceWord(word.text, row, col, true)) {
-                                    this.placeWord(word, row, col, true);
-                                    placed = true;
-                                    break;
-                                }
-                            }
-                        }
+                // 尝试放置其余单词
+                for (let i = 1; i < sortedWords.length; i++) {
+                    const word = sortedWords[i];
+                    if (!this.tryPlaceWord(word)) {
+                        throw new Error('Word placement failed');
                     }
-                    if (placed) break;
                 }
-                if (placed) break;
-            }
 
-            if (!placed) {
-                throw new Error('Could not place all words');
+                // 如果所有单词都放置成功，裁剪网格并返回结果
+                this.trimGrid();
+                return {
+                    grid: {
+                        grid: this.grid,
+                        size: this.size,
+                        placedWords: this.placedWords
+                    },
+                    words: this.placedWords.map(word => ({
+                        text: word.text,
+                        hint: word.hint,
+                        number: word.number,
+                        horizontal: word.horizontal
+                    }))
+                };
+            } catch (error) {
+                // 如果是最后一次尝试，抛出错误
+                if (attempt === this.maxAttempts - 1) {
+                    throw new Error('Could not place all words after multiple attempts');
+                }
+                // 否则继续尝试
+                continue;
+            }
+        }
+    }
+
+    tryPlaceWord(word) {
+        // 遍历已放置的单词，寻找交叉点
+        const shuffledPlacedWords = this.shuffleArray([...this.placedWords]);
+        
+        for (const placedWord of shuffledPlacedWords) {
+            // 尝试不同的起始位置
+            const positions = this.findIntersectionPositions(word.text, placedWord);
+            
+            for (const pos of positions) {
+                if (placedWord.horizontal) {
+                    // 垂直放置新单词
+                    const row = placedWord.row - pos.wordIndex;
+                    const col = placedWord.col + pos.placedIndex;
+                    if (this.canPlaceWord(word.text, row, col, false)) {
+                        this.placeWord(word, row, col, false);
+                        return true;
+                    }
+                } else {
+                    // 水平放置新单词
+                    const row = placedWord.row + pos.placedIndex;
+                    const col = placedWord.col - pos.wordIndex;
+                    if (this.canPlaceWord(word.text, row, col, true)) {
+                        this.placeWord(word, row, col, true);
+                        return true;
+                    }
+                }
             }
         }
 
-        // 裁剪网格，移除空白边缘
-        this.trimGrid();
+        // 如果没有找到交叉点，尝试在空白处放置
+        return this.tryPlaceWordInEmptySpace(word);
+    }
 
-        // 返回游戏数据
-        return {
-            grid: {
-                grid: this.grid,
-                size: this.size,
-                placedWords: this.placedWords
-            },
-            words: this.placedWords.map(word => ({
-                text: word.text,
-                hint: word.hint,
-                number: word.number,
-                horizontal: word.horizontal
-            }))
-        };
+    findIntersectionPositions(word, placedWord) {
+        const positions = [];
+        for (let i = 0; i < word.length; i++) {
+            for (let j = 0; j < placedWord.text.length; j++) {
+                if (word[i] === placedWord.text[j]) {
+                    positions.push({ wordIndex: i, placedIndex: j });
+                }
+            }
+        }
+        return this.shuffleArray(positions);
+    }
+
+    tryPlaceWordInEmptySpace(word) {
+        // 在网格的空白区域尝试放置单词
+        for (let row = 1; row < this.size - word.text.length; row++) {
+            for (let col = 1; col < this.size - word.text.length; col++) {
+                // 尝试水平放置
+                if (this.canPlaceWord(word.text, row, col, true)) {
+                    this.placeWord(word, row, col, true);
+                    return true;
+                }
+                // 尝试垂直放置
+                if (this.canPlaceWord(word.text, row, col, false)) {
+                    this.placeWord(word, row, col, false);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     canPlaceWord(word, row, col, horizontal) {
@@ -109,6 +152,9 @@ export class PuzzleGenerator {
             return false;
         }
 
+        let hasIntersection = false;
+        let hasAdjacentWord = false;
+
         // 检查每个字母位置
         for (let i = 0; i < word.length; i++) {
             const currentRow = horizontal ? row : row + i;
@@ -116,27 +162,49 @@ export class PuzzleGenerator {
             const current = this.grid[currentRow][currentCol];
 
             // 如果位置已有字母，必须匹配
-            if (current !== null && current !== word[i]) {
-                return false;
+            if (current !== null) {
+                if (current !== word[i]) {
+                    return false;
+                }
+                hasIntersection = true;
+                continue;
             }
 
-            // 检查相邻位置
+            // 检查相邻位置是否有其他单词
             if (horizontal) {
                 // 检查上下位置
-                if ((currentRow > 0 && this.grid[currentRow - 1][currentCol] !== null && i === 0) ||
-                    (currentRow < this.size - 1 && this.grid[currentRow + 1][currentCol] !== null && i === 0)) {
-                    return false;
+                if (currentRow > 0 && this.grid[currentRow - 1][currentCol] !== null) {
+                    hasAdjacentWord = true;
+                }
+                if (currentRow < this.size - 1 && this.grid[currentRow + 1][currentCol] !== null) {
+                    hasAdjacentWord = true;
                 }
             } else {
                 // 检查左右位置
-                if ((currentCol > 0 && this.grid[currentRow][currentCol - 1] !== null && i === 0) ||
-                    (currentCol < this.size - 1 && this.grid[currentRow][currentCol + 1] !== null && i === 0)) {
-                    return false;
+                if (currentCol > 0 && this.grid[currentRow][currentCol - 1] !== null) {
+                    hasAdjacentWord = true;
+                }
+                if (currentCol < this.size - 1 && this.grid[currentRow][currentCol + 1] !== null) {
+                    hasAdjacentWord = true;
                 }
             }
         }
 
-        return true;
+        // 检查单词的前后是否有其他字母
+        if (horizontal) {
+            if ((col > 0 && this.grid[row][col - 1] !== null) ||
+                (col + word.length < this.size && this.grid[row][col + word.length] !== null)) {
+                return false;
+            }
+        } else {
+            if ((row > 0 && this.grid[row - 1][col] !== null) ||
+                (row + word.length < this.size && this.grid[row + word.length][col] !== null)) {
+                return false;
+            }
+        }
+
+        // 必须至少有一个交叉点或者是第一个单词
+        return this.placedWords.length === 0 || hasIntersection || !hasAdjacentWord;
     }
 
     placeWord(word, row, col, horizontal) {
@@ -203,5 +271,13 @@ export class PuzzleGenerator {
         // 更新网格
         this.grid = newGrid;
         this.size = newSize;
+    }
+
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
     }
 } 
