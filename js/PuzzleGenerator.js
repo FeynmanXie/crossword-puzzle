@@ -2,7 +2,7 @@
 export class PuzzleGenerator {
     constructor() {
         this.reset();
-        this.maxAttempts = 100; // 最大尝试次数
+        this.maxAttempts = 500; // 增加最大尝试次数
     }
 
     reset() {
@@ -26,8 +26,8 @@ export class PuzzleGenerator {
 
         // 计算初始网格大小
         this.size = Math.max(
-            sortedWords[0].text.length + 4,
-            Math.ceil(Math.sqrt(words.reduce((sum, word) => sum + word.text.length, 0) * 1.8))
+            sortedWords[0].text.length + 6, // 增加边距
+            Math.ceil(Math.sqrt(words.reduce((sum, word) => sum + word.text.length, 0) * 2.2))
         );
 
         // 多次尝试生成拼图
@@ -43,7 +43,10 @@ export class PuzzleGenerator {
                 const firstWord = sortedWords[0];
                 const startRow = Math.floor(this.size / 2);
                 const startCol = Math.floor((this.size - firstWord.text.length) / 2);
-                this.placeWord(firstWord, startRow, startCol, true);
+                
+                // 随机决定第一个单词的方向
+                const firstWordHorizontal = Math.random() < 0.5;
+                this.placeWord(firstWord, startRow, startCol, firstWordHorizontal);
 
                 // 尝试放置其余单词
                 for (let i = 1; i < sortedWords.length; i++) {
@@ -87,23 +90,29 @@ export class PuzzleGenerator {
             for (let i = 0; i < word.text.length; i++) {
                 for (let j = 0; j < placed.length; j++) {
                     if (word.text[i] === placed[j]) {
-                        // 如果已放置的单词是水平的，新单词应该垂直放置
+                        // 尝试两个方向的放置
+                        const positions = [];
+                        
+                        // 如果已放置的单词是水平的，尝试垂直放置
                         if (placedHorizontal) {
                             const row = placedWord.row - i;
                             const col = placedWord.col + j;
                             if (this.canPlaceWord(word.text, row, col, false)) {
-                                intersections.push({
+                                positions.push({
                                     row,
                                     col,
                                     horizontal: false,
                                     score: this.calculatePlacementScore(word.text, row, col, false)
                                 });
                             }
-                        } else {
+                        }
+                        
+                        // 如果已放置的单词是垂直的，尝试水平放置
+                        if (!placedHorizontal) {
                             const row = placedWord.row + j;
                             const col = placedWord.col - i;
                             if (this.canPlaceWord(word.text, row, col, true)) {
-                                intersections.push({
+                                positions.push({
                                     row,
                                     col,
                                     horizontal: true,
@@ -111,6 +120,14 @@ export class PuzzleGenerator {
                                 });
                             }
                         }
+
+                        // 随机打乱位置顺序，增加变化性
+                        for (let k = positions.length - 1; k > 0; k--) {
+                            const l = Math.floor(Math.random() * (k + 1));
+                            [positions[k], positions[l]] = [positions[l], positions[k]];
+                        }
+
+                        intersections.push(...positions);
                     }
                 }
             }
@@ -120,7 +137,12 @@ export class PuzzleGenerator {
         if (intersections.length > 0) {
             // 按得分排序，选择最佳位置
             intersections.sort((a, b) => b.score - a.score);
-            const best = intersections[0];
+            
+            // 从前3个最佳位置中随机选择一个
+            const numChoices = Math.min(3, intersections.length);
+            const choiceIndex = Math.floor(Math.random() * numChoices);
+            const best = intersections[choiceIndex];
+            
             this.placeWord(word, best.row, best.col, best.horizontal);
             return true;
         }
@@ -153,9 +175,9 @@ export class PuzzleGenerator {
                     if (r >= 0 && r < this.size && c >= 0 && c < this.size) {
                         if (this.grid[r][c] !== null) {
                             if ((horizontal && dr === 0) || (!horizontal && dc === 0)) {
-                                score -= 5; // 平行相邻扣分
+                                score -= 3; // 减少平行相邻扣分
                             } else {
-                                score += 2; // 垂直相邻加分
+                                score += 1; // 减少垂直相邻加分
                             }
                         }
                     }
@@ -163,16 +185,16 @@ export class PuzzleGenerator {
             }
         }
 
-        // 如果没有交叉点，返回最低分
+        // 如果没有交叉点，返回较低的分数而不是极低分
         if (intersectionCount === 0) {
-            return -1000;
+            return -100;
         }
 
-        // 根据单词位置调整分数
+        // 根据单词位置调整分数，减少中心位置的影响
         const centerRow = this.size / 2;
         const centerCol = this.size / 2;
         const distanceFromCenter = Math.abs(row - centerRow) + Math.abs(col - centerCol);
-        score -= distanceFromCenter; // 距离中心越远分数越低
+        score -= distanceFromCenter * 0.5; // 减少距离中心的权重
 
         return score;
     }
@@ -202,33 +224,52 @@ export class PuzzleGenerator {
                 continue;
             }
 
-            // 检查相邻位置
+            // 检查相邻位置，允许更多的相邻情况
             if (horizontal) {
                 // 检查上下位置是否有字母
-                if (currentRow > 0 && this.grid[currentRow - 1][currentCol] !== null) return false;
-                if (currentRow < this.size - 1 && this.grid[currentRow + 1][currentCol] !== null) return false;
+                if (currentRow > 0 && this.grid[currentRow - 1][currentCol] !== null &&
+                    !this.isPartOfCrossword(currentRow - 1, currentCol)) return false;
+                if (currentRow < this.size - 1 && this.grid[currentRow + 1][currentCol] !== null &&
+                    !this.isPartOfCrossword(currentRow + 1, currentCol)) return false;
             } else {
                 // 检查左右位置是否有字母
-                if (currentCol > 0 && this.grid[currentRow][currentCol - 1] !== null) return false;
-                if (currentCol < this.size - 1 && this.grid[currentRow][currentCol + 1] !== null) return false;
+                if (currentCol > 0 && this.grid[currentRow][currentCol - 1] !== null &&
+                    !this.isPartOfCrossword(currentRow, currentCol - 1)) return false;
+                if (currentCol < this.size - 1 && this.grid[currentRow][currentCol + 1] !== null &&
+                    !this.isPartOfCrossword(currentRow, currentCol + 1)) return false;
             }
         }
 
-        // 检查单词的前后是否有其他字母
+        // 检查单词的前后是否有其他字母，允许更多的情况
         if (horizontal) {
-            if ((col > 0 && this.grid[row][col - 1] !== null) ||
-                (col + word.length < this.size && this.grid[row][col + word.length] !== null)) {
-                return false;
-            }
+            if (col > 0 && this.grid[row][col - 1] !== null &&
+                !this.isPartOfCrossword(row, col - 1)) return false;
+            if (col + word.length < this.size && this.grid[row][col + word.length] !== null &&
+                !this.isPartOfCrossword(row, col + word.length)) return false;
         } else {
-            if ((row > 0 && this.grid[row - 1][col] !== null) ||
-                (row + word.length < this.size && this.grid[row + word.length][col] !== null)) {
-                return false;
-            }
+            if (row > 0 && this.grid[row - 1][col] !== null &&
+                !this.isPartOfCrossword(row - 1, col)) return false;
+            if (row + word.length < this.size && this.grid[row + word.length][col] !== null &&
+                !this.isPartOfCrossword(row + word.length, col)) return false;
         }
 
         // 必须有交叉点（除了第一个单词）
         return this.placedWords.length === 0 || hasIntersection;
+    }
+
+    isPartOfCrossword(row, col) {
+        // 检查一个位置是否是已放置单词的一部分
+        return this.placedWords.some(word => {
+            if (word.horizontal) {
+                return row === word.row && 
+                       col >= word.col && 
+                       col < word.col + word.text.length;
+            } else {
+                return col === word.col && 
+                       row >= word.row && 
+                       row < word.row + word.text.length;
+            }
+        });
     }
 
     placeWord(word, row, col, horizontal) {
