@@ -9,14 +9,14 @@
     --grid-gap: 1px;
     --disabled-color: #e0e0e0;
     --transition-speed: 0.3s;
-    --background-color: #fff;
+    --background-color: #f5f5f5;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 20px;
-    background-color: #f5f5f5;
+    background-color: var(--background-color);
     color: #333;
     min-height: 100vh;
     display: flex;
@@ -28,8 +28,8 @@ body {
     margin: 0 auto;
     padding: 20px;
     background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     position: relative;
     z-index: 1000;
     flex: 1;
@@ -43,10 +43,9 @@ body {
     border-bottom: 2px solid var(--border-color);
 }
 
-h1 {
+.header h1 {
     color: var(--primary-color);
-    margin: 0;
-    font-size: 2.5em;
+    margin: 0 0 10px 0;
 }
 
 h2 {
@@ -55,64 +54,76 @@ h2 {
     font-size: 1.5em;
 }
 
-/* 生成器页面样式 */
-.generator-content {
-    display: flex;
+/* 主内容区布局 */
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 30px;
-    flex-wrap: wrap;
+    align-items: start;
 }
 
-.word-selection-section {
-    flex: 1;
-    min-width: 300px;
+/* 单词选择区域 */
+.word-selection {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-height: 600px;
+    overflow-y: auto;
 }
 
-.preview-section {
-    flex: 1;
-    min-width: 300px;
-}
-
-.word-inputs {
+.word-list {
     margin-bottom: 20px;
 }
 
-.word-input {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.input-group {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.word-input input {
+.word-item {
     padding: 10px;
-    border: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.word-text {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.word-hint {
+    color: #666;
+    font-size: 0.9em;
+}
+
+/* 预览区域 */
+.preview-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.preview-grid {
+    aspect-ratio: 1;
+    background: #f8f9fa;
     border-radius: 4px;
-    font-size: 16px;
+    display: grid;
+    gap: 1px;
+    padding: 2px;
 }
 
-.word-input .word-text {
-    text-transform: uppercase;
-}
-
-.remove-word {
-    background: #ff4444;
+/* 按钮样式 */
+.button {
+    background: var(--primary-color);
     color: white;
     border: none;
+    padding: 12px 24px;
     border-radius: 4px;
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    align-self: flex-start;
+    font-size: 1em;
+    transition: background 0.3s;
+    width: 100%;
+}
+
+.button:hover {
+    background: #1976D2;
 }
 
 /* 游戏页面样式 */
@@ -321,6 +332,18 @@ h2 {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    .container {
+        padding: 10px;
+    }
+
+    .word-selection, .preview-section {
+        max-height: none;
+    }
+
     .game-content {
         flex-direction: column;
     }

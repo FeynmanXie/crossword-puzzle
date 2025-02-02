@@ -6,184 +6,70 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Sports Crossword Puzzle</title>
+    <title>Sports Crossword Generator</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1>Sports Crossword Puzzle</h1>
-            <p class="subtitle">Test your knowledge of sports and fitness!</p>
+            <h1>Sports Crossword Generator</h1>
+            <p>Test your knowledge of sports and fitness!</p>
         </header>
 
-        <div class="generator-content">
-            <div class="word-selection-section">
-                <h2>Available Sports Words</h2>
-                <div id="word-list" class="word-list">
-                    <!-- 词条列表将在这里动态生成 -->
+        <div class="main-content">
+            <!-- 左侧单词选择区域 -->
+            <div class="word-selection">
+                <h2>Sports Words</h2>
+                <div class="word-list">
+                    <!-- 单词列表将通过JS动态生成 -->
                 </div>
-                <div class="controls">
-                    <button class="button primary" onclick="generatePuzzle()">Generate Puzzle</button>
-                    <button class="button" onclick="selectRandomWords()">Random Selection</button>
-                </div>
+                <button id="generate-button" class="button primary" onclick="generatePuzzle()">
+                    Start Game
+                </button>
             </div>
 
-            <div id="preview-section" class="preview-section" style="display: none;">
+            <!-- 右侧预览区域 -->
+            <div class="preview-section">
                 <h2>Preview</h2>
-                <div class="grid-container">
-                    <div id="preview-grid" class="crossword-grid"></div>
-                </div>
-                <button class="button primary" onclick="startGame()">Start Game</button>
+                <div id="preview-grid" class="preview-grid"></div>
             </div>
         </div>
-
-        <div id="status" class="status"></div>
     </div>
 
     <script type="module">
-        // 添加随机参数以防止缓存
-        const version = new Date().getTime();
-        const PuzzleGeneratorModule = await import('./js/PuzzleGenerator.js?v=' + version);
-        const SportsWordsModule = await import('./js/sports_words.js?v=' + version);
-        
-        const PuzzleGenerator = PuzzleGeneratorModule.PuzzleGenerator;
-        const sportsWords = SportsWordsModule.sportsWords;
+        import { sportsWords } from './js/sports_words.js';
+        import { PuzzleGenerator } from './js/PuzzleGenerator.js';
 
-        let puzzleData = null;
-        let generator = new PuzzleGenerator();
-        let selectedWords = new Set();
+        // 初始化时显示单词列表
+        window.onload = function() {
+            displayWordList();
+        };
 
-        // 显示可用的运动词条
+        // 显示单词列表
         function displayWordList() {
-            const container = document.getElementById('word-list');
-            container.innerHTML = '';
-            
+            const wordList = document.querySelector('.word-list');
             sportsWords.forEach(word => {
-                const wordElement = document.createElement('div');
-                wordElement.className = 'word-item' + (selectedWords.has(word) ? ' selected' : '');
-                wordElement.innerHTML = `
+                const wordItem = document.createElement('div');
+                wordItem.className = 'word-item';
+                wordItem.innerHTML = `
                     <span class="word-text">${word.text}</span>
                     <span class="word-hint">${word.hint}</span>
                 `;
-                wordElement.addEventListener('click', () => toggleWordSelection(word));
-                container.appendChild(wordElement);
+                wordList.appendChild(wordItem);
             });
         }
 
-        // 切换单词选择状态
-        function toggleWordSelection(word) {
-            if (selectedWords.has(word)) {
-                selectedWords.delete(word);
-            } else if (selectedWords.size < 8) {
-                selectedWords.add(word);
-            } else {
-                showStatus('Maximum 8 words can be selected', true);
-                return;
-            }
-            displayWordList();
-            updateGenerateButton();
-        }
-
-        // 随机选择单词
-        function selectRandomWords() {
-            selectedWords.clear();
-            const shuffled = [...sportsWords].sort(() => 0.5 - Math.random());
-            for (let i = 0; i < Math.min(4, shuffled.length); i++) {
-                selectedWords.add(shuffled[i]);
-            }
-            displayWordList();
-            updateGenerateButton();
-        }
-
-        // 更新生成按钮状态
-        function updateGenerateButton() {
-            const generateButton = document.querySelector('.button.primary');
-            generateButton.disabled = selectedWords.size < 2;
-        }
-
         // 生成填字游戏
-        function generatePuzzle() {
-            if (selectedWords.size < 2) {
-                showStatus('Please select at least 2 words', true);
-                return;
-            }
-
+        window.generatePuzzle = function() {
+            const generator = new PuzzleGenerator();
             try {
-                puzzleData = generator.generatePuzzle([...selectedWords]);
-                showPreview(puzzleData);
-                showStatus('Puzzle generated successfully!');
+                const result = generator.generatePuzzle(sportsWords);
+                const data = encodeURIComponent(JSON.stringify(result));
+                window.location.href = `game.html?data=${data}`;
             } catch (error) {
-                showStatus('Failed to generate puzzle: ' + error.message, true);
+                alert('Failed to generate puzzle. Please try again.');
             }
-        }
-
-        function showPreview(data) {
-            const previewSection = document.getElementById('preview-section');
-            const previewGrid = document.getElementById('preview-grid');
-            previewSection.style.display = 'block';
-            
-            previewGrid.innerHTML = '';
-            previewGrid.style.gridTemplateRows = `repeat(${data.grid.size}, 1fr)`;
-            previewGrid.style.gridTemplateColumns = `repeat(${data.grid.size}, 1fr)`;
-            
-            for (let i = 0; i < data.grid.size; i++) {
-                for (let j = 0; j < data.grid.size; j++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    
-                    if (data.grid.grid[i][j] === null) {
-                        cell.className += ' empty';
-                    } else {
-                        cell.textContent = data.grid.grid[i][j];
-                        
-                        const word = data.grid.placedWords.find(w => 
-                            (w.horizontal && w.row === i && w.col === j) ||
-                            (!w.horizontal && w.row === i && w.col === j)
-                        );
-                        
-                        if (word && (word.col === j && word.row === i)) {
-                            const number = document.createElement('span');
-                            number.className = 'number';
-                            number.textContent = word.number;
-                            cell.appendChild(number);
-                        }
-                    }
-                    previewGrid.appendChild(cell);
-                }
-            }
-        }
-
-        function startGame() {
-            if (!puzzleData) {
-                showStatus('Please generate a puzzle first', true);
-                return;
-            }
-
-            const gameData = encodeURIComponent(JSON.stringify(puzzleData));
-            window.location.href = `game.html?data=${gameData}`;
-        }
-
-        function showStatus(message, isError = false) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = 'status ' + (isError ? 'error' : 'success');
-            
-            setTimeout(() => {
-                status.textContent = '';
-                status.className = 'status';
-            }, 3000);
-        }
-
-        // 将函数暴露给全局作用域
-        window.generatePuzzle = generatePuzzle;
-        window.selectRandomWords = selectRandomWords;
-        window.startGame = startGame;
-
-        // 初始化页面
-        document.addEventListener('DOMContentLoaded', () => {
-            displayWordList();
-            updateGenerateButton();
-        });
+        };
     </script>
 
     <style>
