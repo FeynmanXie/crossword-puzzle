@@ -1,24 +1,71 @@
 // 运动主题填字游戏词条数据库
 export const sportsWords = [
-    // 基础动作词（都包含A）
+    // 5-6字母单词(增加交叉机会)
     {
-        text: "PLAY",
-        hint: "To take part in a sport or game"
+        text: "PLAYER",
+        hint: "A person who takes part in a sport"
     },
     {
-        text: "RACE",
-        hint: "A competition of speed between participants"
+        text: "RACING",
+        hint: "Competing in a speed contest"
+    },
+    {
+        text: "SPORTS",
+        hint: "Physical activities governed by rules"
+    },
+    {
+        text: "COURT",
+        hint: "A place where some sports are played"
+    },
+    {
+        text: "TRACK",
+        hint: "A course for racing or running"
+    },
+    {
+        text: "SCORE",
+        hint: "To gain points in a game"
+    },
+    // 4字母单词(精选常用词)
+    {
+        text: "TEAM",
+        hint: "A group of players working together"
     },
     {
         text: "GAME",
         hint: "A competitive sporting event"
     },
     {
-        text: "TEAM",
-        hint: "A group of players working together"
+        text: "BALL",
+        hint: "A round object used in many sports"
     },
-    
-    // 包含E的词组
+    {
+        text: "GOAL",
+        hint: "A scoring target in sports"
+    },
+    {
+        text: "RACE",
+        hint: "A competition of speed"
+    },
+    {
+        text: "PLAY",
+        hint: "To take part in a sport"
+    },
+    {
+        text: "TRAIN",
+        hint: "To practice for a sport"
+    },
+    {
+        text: "MATCH",
+        hint: "A contest between opponents"
+    },
+    {
+        text: "STAR",
+        hint: "An exceptional athlete"
+    },
+    {
+        text: "PACE",
+        hint: "Speed of movement in a race"
+    },
     {
         text: "MEET",
         hint: "A sports competition event"
@@ -35,8 +82,6 @@ export const sportsWords = [
         text: "LEAD",
         hint: "To be ahead in a competition"
     },
-
-    // 包含R的词组
     {
         text: "RIDE",
         hint: "To move on a bicycle or horse"
@@ -53,8 +98,6 @@ export const sportsWords = [
         text: "RULE",
         hint: "A regulation in sports"
     },
-
-    // 包含T的词组
     {
         text: "TIME",
         hint: "Duration or record in a race"
@@ -64,20 +107,8 @@ export const sportsWords = [
         hint: "To become physically exhausted"
     },
     {
-        text: "TEAM",
-        hint: "A group working together in sports"
-    },
-    {
         text: "TURN",
         hint: "To change direction in movement"
-    },
-    {
-        text: "BALL",
-        hint: "A round object used in many sports"
-    },
-    {
-        text: "GOAL",
-        hint: "A scoring point in many sports like soccer and hockey"
     },
     {
         text: "SWIM",
@@ -102,14 +133,6 @@ export const sportsWords = [
     {
         text: "SAVE",
         hint: "To prevent the other team from scoring"
-    },
-    {
-        text: "STAR",
-        hint: "An exceptional athlete"
-    },
-    {
-        text: "PACE",
-        hint: "Speed of movement in a race or game"
     },
     {
         text: "GEAR",
