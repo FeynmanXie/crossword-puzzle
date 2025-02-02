@@ -3,8 +3,8 @@ export class PuzzleGenerator {
     constructor() {
         this.reset();
         this.maxAttempts = 1000;
-        this.minWordsRequired = 8; // 新增:最少需要放置的单词数
-        this.intersectionMatrix = {};
+        this.minWordsRequired = 4; // 降低最小要求
+        this.wordGraph = {}; // 新增：单词关系图
     }
 
     reset() {
@@ -12,31 +12,57 @@ export class PuzzleGenerator {
         this.size = 0;
         this.placedWords = [];
         this.wordNumber = 1;
-        this.intersectionMatrix = {};
     }
 
-    // 预处理单词,找出共同字母
-    preprocessWords(words) {
+    // 构建单词关系图
+    buildWordGraph(words) {
+        this.wordGraph = {};
+        
+        // 初始化图
+        words.forEach(word => {
+            this.wordGraph[word.text] = {
+                connections: [],
+                intersections: []
+            };
+        });
+
+        // 找出所有单词间的连接
         for (let i = 0; i < words.length; i++) {
             const word1 = words[i].text;
-            this.intersectionMatrix[word1] = {};
-            
-            for (let j = 0; j < words.length; j++) {
-                if (i === j) continue;
+            for (let j = i + 1; j < words.length; j++) {
                 const word2 = words[j].text;
                 
-                let intersections = [];
+                // 查找共同字母
+                const commonLetters = [];
                 for (let x = 0; x < word1.length; x++) {
                     for (let y = 0; y < word2.length; y++) {
                         if (word1[x] === word2[y]) {
-                            intersections.push({char: word1[x], pos1: x, pos2: y});
+                            commonLetters.push({
+                                letter: word1[x],
+                                pos1: x,
+                                pos2: y
+                            });
                         }
                     }
                 }
-                
-                if (intersections.length > 0) {
-                    this.intersectionMatrix[word1][word2] = intersections;
-                    console.log(`Found ${intersections.length} intersections between ${word1} and ${word2}`);
+
+                // 如果有共同字母，建立连接
+                if (commonLetters.length > 0) {
+                    this.wordGraph[word1].connections.push(word2);
+                    this.wordGraph[word1].intersections.push({
+                        word: word2,
+                        letters: commonLetters
+                    });
+                    
+                    this.wordGraph[word2].connections.push(word1);
+                    this.wordGraph[word2].intersections.push({
+                        word: word1,
+                        letters: commonLetters.map(l => ({
+                            letter: l.letter,
+                            pos1: l.pos2,
+                            pos2: l.pos1
+                        }))
+                    });
                 }
             }
         }
@@ -47,78 +73,136 @@ export class PuzzleGenerator {
             throw new Error('At least 2 words are required');
         }
 
-        this.reset();
-        this.preprocessWords(words);
+        // 构建单词关系图
+        this.buildWordGraph(words);
 
-        // 按分数排序单词(长度 + 交叉点数量 + 常用字母)
+        // 按连接数排序单词
         const sortedWords = [...words].sort((a, b) => {
-            const scoreA = this.calculateWordScore(a.text);
-            const scoreB = this.calculateWordScore(b.text);
-            return scoreB - scoreA;
+            return this.wordGraph[b.text].connections.length - 
+                   this.wordGraph[a.text].connections.length;
         });
 
-        // 增加初始网格大小
-        this.size = Math.max(
-            sortedWords[0].text.length + 6,
-            Math.ceil(Math.sqrt(words.reduce((sum, word) => sum + word.text.length, 0) * 2.2))
-        );
-
-        // 多次尝试生成拼图
+        // 多次尝试生成
         for (let attempt = 0; attempt < this.maxAttempts; attempt++) {
             try {
+                this.reset();
+                
+                // 设置初始网格大小
+                this.size = Math.max(
+                    sortedWords[0].text.length + 4,
+                    Math.ceil(Math.sqrt(words.length * 25))
+                );
+                
                 this.grid = Array(this.size).fill(null)
                     .map(() => Array(this.size).fill(null));
-                this.placedWords = [];
-                this.wordNumber = 1;
 
-                // 放置第一个单词
+                // 放置第一个单词（连接最多的）
                 const firstWord = sortedWords[0];
                 const centerRow = Math.floor(this.size / 2);
                 const centerCol = Math.floor(this.size / 2);
-                const offset = Math.floor(Math.random() * 3) - 1;
-                
-                const startRow = centerRow + offset;
-                const startCol = centerCol + offset;
-                const firstWordHorizontal = Math.random() < 0.5;
-                
-                this.placeWord(firstWord, startRow, startCol, firstWordHorizontal);
+                this.placeWord(firstWord, centerRow, centerCol, true);
 
-                // 尝试放置其余单词
-                let placedCount = 1;
-                for (let i = 1; i < sortedWords.length; i++) {
-                    if (this.placeNextWord(sortedWords[i])) {
-                        placedCount++;
-                    }
-                    // 如果已经放置足够多的单词,可以提前结束
-                    if (placedCount >= this.minWordsRequired && 
-                        placedCount >= words.length * 0.6) { // 至少放置60%的单词
-                        break;
-                    }
-                }
+                // 创建待处理队列，优先放置与已放置单词有连接的单词
+                const placedWords = new Set([firstWord.text]);
+                const queue = [...this.wordGraph[firstWord.text].connections];
+                const remaining = new Set(sortedWords.slice(1).map(w => w.text));
 
-                // 如果放置的单词数量达到要求
-                if (placedCount >= this.minWordsRequired) {
-                    this.trimGrid();
-                    return {
-                        grid: {
-                            grid: this.grid,
-                            size: this.size,
-                            placedWords: this.placedWords
-                        },
-                        words: this.placedWords.map(word => ({
-                            text: word.text,
-                            hint: word.hint,
-                            number: word.number,
-                            horizontal: word.horizontal
-                        }))
-                    };
+                // 持续尝试放置单词
+                while (queue.length > 0 || remaining.size > 0) {
+                    let nextWord;
+                    if (queue.length > 0) {
+                        nextWord = queue.shift();
+                    } else {
+                        nextWord = Array.from(remaining)[0];
+                    }
+
+                    if (!placedWords.has(nextWord)) {
+                        const wordObj = words.find(w => w.text === nextWord);
+                        if (this.tryPlaceWordWithConnections(wordObj, placedWords)) {
+                            placedWords.add(nextWord);
+                            // 添加新的连接到队列
+                            this.wordGraph[nextWord].connections
+                                .filter(w => !placedWords.has(w))
+                                .forEach(w => {
+                                    if (!queue.includes(w)) {
+                                        queue.push(w);
+                                    }
+                                });
+                        }
+                        remaining.delete(nextWord);
+                    }
+
+                    // 如果放置了足够多的单词，可以结束
+                    if (placedWords.size >= this.minWordsRequired) {
+                        this.trimGrid();
+                        return {
+                            grid: {
+                                grid: this.grid,
+                                size: this.size,
+                                placedWords: this.placedWords
+                            },
+                            words: this.placedWords.map(word => ({
+                                text: word.text,
+                                hint: word.hint,
+                                number: word.number,
+                                horizontal: word.horizontal
+                            }))
+                        };
+                    }
                 }
             } catch (error) {
+                console.log('Attempt failed:', error);
                 continue;
             }
         }
         
         throw new Error('Could not generate a valid puzzle');
+    }
+
+    // 尝试放置与已放置单词有连接的单词
+    tryPlaceWordWithConnections(word, placedWords) {
+        const intersections = [];
+        
+        // 收集所有可能的交叉点
+        for (const intersection of this.wordGraph[word.text].intersections) {
+            if (placedWords.has(intersection.word)) {
+                const placedWord = this.placedWords.find(w => w.text === intersection.word);
+                if (placedWord) {
+                    for (const letter of intersection.letters) {
+                        // 尝试水平放置
+                        const rowH = placedWord.row;
+                        const colH = placedWord.col + (placedWord.horizontal ? letter.pos2 : 0);
+                        if (this.canPlaceWord(word.text, rowH, colH - letter.pos1, true)) {
+                            intersections.push({
+                                row: rowH,
+                                col: colH - letter.pos1,
+                                horizontal: true
+                            });
+                        }
+                        
+                        // 尝试垂直放置
+                        const rowV = placedWord.row - letter.pos1;
+                        const colV = placedWord.col;
+                        if (this.canPlaceWord(word.text, rowV, colV, false)) {
+                            intersections.push({
+                                row: rowV,
+                                col: colV,
+                                horizontal: false
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // 如果找到可放置位置，随机选择一个
+        if (intersections.length > 0) {
+            const position = intersections[Math.floor(Math.random() * intersections.length)];
+            this.placeWord(word, position.row, position.col, position.horizontal);
+            return true;
+        }
+
+        return false;
     }
 
     // 新增:计算单词分数
@@ -137,7 +221,7 @@ export class PuzzleGenerator {
         }
         
         // 交叉点分数
-        const intersections = Object.keys(this.intersectionMatrix[word] || {}).length;
+        const intersections = Object.keys(this.wordGraph[word] || {}).length;
         score += intersections * 15;
         
         return score;
@@ -145,7 +229,7 @@ export class PuzzleGenerator {
 
     placeNextWord(word) {
         const intersections = [];
-        const wordIntersections = this.intersectionMatrix[word.text] || {};
+        const wordIntersections = this.wordGraph[word.text] || {};
         
         // 寻找所有可能的放置位置
         for (const placedWord of this.placedWords) {
