@@ -3,6 +3,7 @@ export class PuzzleGenerator {
     constructor() {
         this.reset();
         this.maxAttempts = 500; // 增加最大尝试次数
+        this.intersectionMatrix = {}; // 记录单词之间的潜在交叉点
     }
 
     reset() {
@@ -10,6 +11,34 @@ export class PuzzleGenerator {
         this.size = 0;
         this.placedWords = [];
         this.wordNumber = 1;
+        this.intersectionMatrix = {};
+    }
+
+    // 预处理单词,找出共同字母
+    preprocessWords(words) {
+        for (let i = 0; i < words.length; i++) {
+            const word1 = words[i].text;
+            this.intersectionMatrix[word1] = {};
+            
+            for (let j = 0; j < words.length; j++) {
+                if (i === j) continue;
+                const word2 = words[j].text;
+                
+                let intersections = [];
+                for (let x = 0; x < word1.length; x++) {
+                    for (let y = 0; y < word2.length; y++) {
+                        if (word1[x] === word2[y]) {
+                            intersections.push({char: word1[x], pos1: x, pos2: y});
+                        }
+                    }
+                }
+                
+                if (intersections.length > 0) {
+                    this.intersectionMatrix[word1][word2] = intersections;
+                    console.log(`Found ${intersections.length} intersections between ${word1} and ${word2}`);
+                }
+            }
+        }
     }
 
     generatePuzzle(words) {
@@ -20,14 +49,19 @@ export class PuzzleGenerator {
 
         // 重置状态
         this.reset();
+        this.preprocessWords(words);
 
-        // 按长度排序单词，长的先放
-        const sortedWords = [...words].sort((a, b) => b.text.length - a.text.length);
+        // 按交叉点数量排序单词
+        const sortedWords = [...words].sort((a, b) => {
+            const intersectionsA = Object.keys(this.intersectionMatrix[a.text] || {}).length;
+            const intersectionsB = Object.keys(this.intersectionMatrix[b.text] || {}).length;
+            return intersectionsB - intersectionsA;
+        });
 
         // 计算初始网格大小
         this.size = Math.max(
-            sortedWords[0].text.length + 6, // 增加边距
-            Math.ceil(Math.sqrt(words.reduce((sum, word) => sum + word.text.length, 0) * 2.2))
+            sortedWords[0].text.length + 4,
+            Math.ceil(Math.sqrt(words.reduce((sum, word) => sum + word.text.length, 0) * 1.8))
         );
 
         // 多次尝试生成拼图
@@ -39,13 +73,16 @@ export class PuzzleGenerator {
                 this.placedWords = [];
                 this.wordNumber = 1;
 
-                // 放置第一个单词在中心位置
+                // 放置第一个单词在中心附近的随机位置
                 const firstWord = sortedWords[0];
-                const startRow = Math.floor(this.size / 2);
-                const startCol = Math.floor((this.size - firstWord.text.length) / 2);
+                const centerRow = Math.floor(this.size / 2);
+                const centerCol = Math.floor(this.size / 2);
+                const offset = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
                 
-                // 随机决定第一个单词的方向
+                const startRow = centerRow + offset;
+                const startCol = centerCol + offset;
                 const firstWordHorizontal = Math.random() < 0.5;
+                
                 this.placeWord(firstWord, startRow, startCol, firstWordHorizontal);
 
                 // 尝试放置其余单词
@@ -80,70 +117,49 @@ export class PuzzleGenerator {
     }
 
     placeNextWord(word) {
-        // 找到所有可能的交叉点
         const intersections = [];
+        const wordIntersections = this.intersectionMatrix[word.text] || {};
         
         for (const placedWord of this.placedWords) {
-            const placed = placedWord.text;
-            const placedHorizontal = placedWord.horizontal;
+            const crossPoints = wordIntersections[placedWord.text] || [];
             
-            for (let i = 0; i < word.text.length; i++) {
-                for (let j = 0; j < placed.length; j++) {
-                    if (word.text[i] === placed[j]) {
-                        // 尝试两个方向的放置
-                        const positions = [];
-                        
-                        // 如果已放置的单词是水平的，尝试垂直放置
-                        if (placedHorizontal) {
-                            const row = placedWord.row - i;
-                            const col = placedWord.col + j;
-                            if (this.canPlaceWord(word.text, row, col, false)) {
-                                positions.push({
-                                    row,
-                                    col,
-                                    horizontal: false,
-                                    score: this.calculatePlacementScore(word.text, row, col, false)
-                                });
-                            }
-                        }
-                        
-                        // 如果已放置的单词是垂直的，尝试水平放置
-                        if (!placedHorizontal) {
-                            const row = placedWord.row + j;
-                            const col = placedWord.col - i;
-                            if (this.canPlaceWord(word.text, row, col, true)) {
-                                positions.push({
-                                    row,
-                                    col,
-                                    horizontal: true,
-                                    score: this.calculatePlacementScore(word.text, row, col, true)
-                                });
-                            }
-                        }
-
-                        // 随机打乱位置顺序，增加变化性
-                        for (let k = positions.length - 1; k > 0; k--) {
-                            const l = Math.floor(Math.random() * (k + 1));
-                            [positions[k], positions[l]] = [positions[l], positions[k]];
-                        }
-
-                        intersections.push(...positions);
-                    }
+            for (const point of crossPoints) {
+                // 尝试水平放置
+                const rowH = placedWord.row;
+                const colH = placedWord.col + (placedWord.horizontal ? point.pos2 : 0);
+                if (this.canPlaceWord(word.text, rowH, colH - point.pos1, true)) {
+                    const score = this.calculatePlacementScore(word.text, rowH, colH - point.pos1, true);
+                    intersections.push({
+                        row: rowH,
+                        col: colH - point.pos1,
+                        horizontal: true,
+                        score: score
+                    });
+                }
+                
+                // 尝试垂直放置
+                const rowV = placedWord.row - point.pos1;
+                const colV = placedWord.col;
+                if (this.canPlaceWord(word.text, rowV, colV, false)) {
+                    const score = this.calculatePlacementScore(word.text, rowV, colV, false);
+                    intersections.push({
+                        row: rowV,
+                        col: colV,
+                        horizontal: false,
+                        score: score
+                    });
                 }
             }
         }
 
-        // 如果找到可行的交叉点，选择得分最高的
         if (intersections.length > 0) {
-            // 按得分排序，选择最佳位置
+            // 按得分排序并选择最佳交叉点
             intersections.sort((a, b) => b.score - a.score);
             
-            // 从前3个最佳位置中随机选择一个
-            const numChoices = Math.min(3, intersections.length);
-            const choiceIndex = Math.floor(Math.random() * numChoices);
-            const best = intersections[choiceIndex];
+            // 优先选择得分最高的交叉点
+            const selected = intersections[0];
             
-            this.placeWord(word, best.row, best.col, best.horizontal);
+            this.placeWord(word, selected.row, selected.col, selected.horizontal);
             return true;
         }
 
@@ -153,6 +169,7 @@ export class PuzzleGenerator {
     calculatePlacementScore(word, row, col, horizontal) {
         let score = 0;
         let intersectionCount = 0;
+        let adjacentCount = 0;
 
         for (let i = 0; i < word.length; i++) {
             const currentRow = horizontal ? row : row + i;
@@ -161,40 +178,45 @@ export class PuzzleGenerator {
             // 检查交叉点
             if (this.grid[currentRow][currentCol] === word[i]) {
                 intersectionCount++;
-                score += 10; // 交叉点得分
+                score += 20; // 增加交叉点权重
             }
 
-            // 检查相邻位置
-            for (let dr = -1; dr <= 1; dr++) {
-                for (let dc = -1; dc <= 1; dc++) {
-                    if (dr === 0 && dc === 0) continue;
-                    
-                    const r = currentRow + dr;
-                    const c = currentCol + dc;
-                    
-                    if (r >= 0 && r < this.size && c >= 0 && c < this.size) {
-                        if (this.grid[r][c] !== null) {
-                            if ((horizontal && dr === 0) || (!horizontal && dc === 0)) {
-                                score -= 3; // 减少平行相邻扣分
-                            } else {
-                                score += 1; // 减少垂直相邻加分
-                            }
+            // 检查相邻字母
+            const adjacentPositions = [
+                {r: currentRow - 1, c: currentCol},
+                {r: currentRow + 1, c: currentCol},
+                {r: currentRow, c: currentCol - 1},
+                {r: currentRow, c: currentCol + 1}
+            ];
+
+            for (const pos of adjacentPositions) {
+                if (pos.r >= 0 && pos.r < this.size && pos.c >= 0 && pos.c < this.size) {
+                    if (this.grid[pos.r][pos.c] !== null) {
+                        if (this.isPartOfCrossword(pos.r, pos.c)) {
+                            adjacentCount++;
+                            score += 3; // 奖励与其他单词相邻
                         }
                     }
                 }
             }
         }
 
-        // 如果没有交叉点，返回较低的分数而不是极低分
-        if (intersectionCount === 0) {
-            return -100;
-        }
-
-        // 根据单词位置调整分数，减少中心位置的影响
+        // 根据单词位置调整分数
         const centerRow = this.size / 2;
         const centerCol = this.size / 2;
-        const distanceFromCenter = Math.abs(row - centerRow) + Math.abs(col - centerCol);
-        score -= distanceFromCenter * 0.5; // 减少距离中心的权重
+        const distanceFromCenter = Math.sqrt(
+            Math.pow(row - centerRow, 2) + Math.pow(col - centerCol, 2)
+        );
+        
+        score -= distanceFromCenter * 0.2; // 减少中心位置的影响
+
+        // 奖励共享元音的交叉
+        if (intersectionCount > 0) {
+            const intersectingChar = this.grid[row][col];
+            if (/[aeiou]/i.test(intersectingChar)) {
+                score += 10;
+            }
+        }
 
         return score;
     }
