@@ -159,14 +159,8 @@
         function handleInput(event) {
             const input = event.target;
             input.value = input.value.toUpperCase();
-            
-            if (input.value) {
-                const isCorrect = input.value === input.dataset.answer;
-                input.parentElement.classList.toggle('correct', isCorrect);
-                input.parentElement.classList.toggle('incorrect', !isCorrect);
-            } else {
-                input.parentElement.classList.remove('correct', 'incorrect');
-            }
+            // 移除即时对错反馈
+            input.parentElement.classList.remove('correct', 'incorrect');
         }
 
         function handleFocus(event) {
@@ -341,8 +335,8 @@
                 const randomInput = emptyInputs[Math.floor(Math.random() * emptyInputs.length)];
                 const answer = randomInput.dataset.answer;
                 randomInput.value = answer;
-                randomInput.dispatchEvent(new Event('input')); // 触发input事件
-                randomInput.parentElement.classList.add('correct');
+                // 移除显示正确答案的样式
+                randomInput.parentElement.classList.remove('correct');
                 hintsRemaining--;
                 updateHintButton();
                 
