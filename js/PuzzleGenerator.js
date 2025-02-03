@@ -3,7 +3,7 @@ export class PuzzleGenerator {
     constructor() {
         this.reset();
         this.maxAttempts = 100;
-        this.debug = true; // 启用调试
+        this.debug = false; // 关闭调试
         this.MIN_WORDS = 4;  // 最少单词数
         this.MAX_WORDS = 8;  // 最多单词数
     }
@@ -23,42 +23,32 @@ export class PuzzleGenerator {
     }
 
     generatePuzzle(words) {
-        // 确保单词数量在合理范围内
         if (!Array.isArray(words) || words.length < this.MIN_WORDS || words.length > this.MAX_WORDS) {
             throw new Error(`Words count must be between ${this.MIN_WORDS} and ${this.MAX_WORDS}`);
         }
-
-        this.log('Starting puzzle generation with words:', words.map(w => w.text));
 
         for (let attempt = 0; attempt < this.maxAttempts; attempt++) {
             try {
                 this.reset();
                 const shuffledWords = [...words].sort(() => Math.random() - 0.5);
-                this.log('Shuffled words:', shuffledWords.map(w => w.text));
 
                 // 放置第一个单词在中心位置
                 const firstWord = shuffledWords[0];
-                const row = 7; // 固定在中心行
-                const col = Math.floor((15 - firstWord.text.length) / 2); // 水平居中
-                
-                this.log(`Placing first word "${firstWord.text}" at [${row}, ${col}] horizontally`);
+                const row = 7;
+                const col = Math.floor((15 - firstWord.text.length) / 2);
                 this.placeWord(firstWord, row, col, true);
-                this.logGrid();
 
                 // 尝试放置其余单词
+                let placedCount = 1;
                 for (let i = 1; i < shuffledWords.length; i++) {
                     const word = shuffledWords[i];
-                    this.log(`\nTrying to place word "${word.text}"`);
-                    if (!this.findAndPlaceWord(word)) {
-                        this.log(`Failed to place word "${word.text}"`);
-                        continue;
+                    if (this.findAndPlaceWord(word)) {
+                        placedCount++;
                     }
-                    this.log(`Successfully placed word "${word.text}"`);
-                    this.logGrid();
                 }
 
-                if (this.placedWords.length >= 4) {
-                    this.log(`Success! Placed ${this.placedWords.length} words`);
+                // 确保放置了足够的单词
+                if (placedCount >= this.MIN_WORDS) {
                     return {
                         grid: {
                             grid: this.grid,
@@ -74,7 +64,6 @@ export class PuzzleGenerator {
                     };
                 }
             } catch (error) {
-                this.log('Error during placement:', error);
                 continue;
             }
         }
@@ -83,35 +72,18 @@ export class PuzzleGenerator {
     }
 
     findAndPlaceWord(word) {
-        // 遍历已放置的单词
-        for (const placedWord of this.placedWords) {
-            // 查找字母匹配
-            for (let i = 0; i < word.text.length; i++) {
-                for (let j = 0; j < placedWord.text.length; j++) {
-                    if (word.text[i] === placedWord.text[j]) {
-                        // 尝试垂直放置
-                        if (placedWord.horizontal) {
-                            const row = placedWord.row - i;
-                            const col = placedWord.col + j;
-                            if (row >= 0 && row + word.text.length <= this.size) {
-                                if (this.canPlaceWord(word.text, row, col, false)) {
-                                    this.placeWord(word, row, col, false);
-                                    return true;
-                                }
-                            }
-                        }
-                        // 尝试水平放置
-                        else {
-                            const row = placedWord.row + j;
-                            const col = placedWord.col - i;
-                            if (col >= 0 && col + word.text.length <= this.size) {
-                                if (this.canPlaceWord(word.text, row, col, true)) {
-                                    this.placeWord(word, row, col, true);
-                                    return true;
-                                }
-                            }
-                        }
-                    }
+        // 尝试所有可能的位置
+        for (let row = 0; row < this.size; row++) {
+            for (let col = 0; col < this.size; col++) {
+                // 尝试水平放置
+                if (this.canPlaceWord(word.text, row, col, true)) {
+                    this.placeWord(word, row, col, true);
+                    return true;
+                }
+                // 尝试垂直放置
+                if (this.canPlaceWord(word.text, row, col, false)) {
+                    this.placeWord(word, row, col, false);
+                    return true;
                 }
             }
         }
@@ -120,10 +92,10 @@ export class PuzzleGenerator {
 
     canPlaceWord(word, row, col, horizontal) {
         // 检查边界
-        if (row < 0 || col < 0 || 
-            (horizontal && col + word.length > this.size) ||
-            (!horizontal && row + word.length > this.size)) {
-            return false;
+        if (horizontal) {
+            if (col + word.length > this.size) return false;
+        } else {
+            if (row + word.length > this.size) return false;
         }
 
         let hasIntersection = false;
@@ -136,20 +108,20 @@ export class PuzzleGenerator {
 
             // 检查字母匹配
             if (current !== null) {
-                if (current !== word[i]) {
-                    return false;
-                }
+                if (current !== word[i]) return false;
                 hasIntersection = true;
                 continue;
             }
 
             // 检查相邻位置
             if (horizontal) {
+                // 检查上下相邻
                 if ((currentRow > 0 && this.grid[currentRow - 1][currentCol] !== null) ||
                     (currentRow < this.size - 1 && this.grid[currentRow + 1][currentCol] !== null)) {
                     return false;
                 }
             } else {
+                // 检查左右相邻
                 if ((currentCol > 0 && this.grid[currentRow][currentCol - 1] !== null) ||
                     (currentCol < this.size - 1 && this.grid[currentRow][currentCol + 1] !== null)) {
                     return false;

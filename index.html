@@ -31,23 +31,36 @@
 
         window.generatePuzzle = function() {
             const generator = new PuzzleGenerator();
-            try {
-                // 固定选择6个单词
-                const WORD_COUNT = 6;
-                const shuffled = [...sportsWords].sort(() => Math.random() - 0.5);
-                const selectedWords = shuffled.slice(0, WORD_COUNT);
-                
-                const result = generator.generatePuzzle(selectedWords);
-                if (!result || !result.grid || !result.words || result.words.length === 0) {
-                    throw new Error('Invalid puzzle data');
+            const maxRetries = 3; // 最大重试次数
+            let retryCount = 0;
+
+            function tryGenerate() {
+                try {
+                    const WORD_COUNT = 6;
+                    const shuffled = [...sportsWords].sort(() => Math.random() - 0.5);
+                    const selectedWords = shuffled.slice(0, WORD_COUNT);
+                    
+                    const result = generator.generatePuzzle(selectedWords);
+                    if (!result || !result.grid || !result.words || result.words.length < 4) {
+                        throw new Error('Invalid puzzle data');
+                    }
+                    
+                    localStorage.setItem('crosswordData', JSON.stringify(result));
+                    window.location.href = 'game.html';
+                } catch (error) {
+                    console.error('Puzzle generation failed:', error);
+                    retryCount++;
+                    if (retryCount < maxRetries) {
+                        console.log(`Retrying... (${retryCount}/${maxRetries})`);
+                        tryGenerate();
+                    } else {
+                        alert('Failed to generate puzzle after multiple attempts. Please try again.');
+                        location.reload();
+                    }
                 }
-                
-                localStorage.setItem('crosswordData', JSON.stringify(result));
-                window.location.href = 'game.html';
-            } catch (error) {
-                console.error('Puzzle generation failed:', error);
-                alert('Failed to generate puzzle. Please try again.');
             }
+
+            tryGenerate();
         };
     </script>
 
