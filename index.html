@@ -31,7 +31,7 @@
 
         window.generatePuzzle = function() {
             const generator = new PuzzleGenerator();
-            const maxRetries = 3; // 最大重试次数
+            const maxRetries = 5;
             let retryCount = 0;
 
             function tryGenerate() {
@@ -45,17 +45,27 @@
                         throw new Error('Invalid puzzle data');
                     }
                     
-                    localStorage.setItem('crosswordData', JSON.stringify(result));
-                    window.location.href = 'game.html';
+                    // 验证数据
+                    const validData = result.words.every(word => 
+                        word.text && word.hint && typeof word.number === 'number' && 
+                        typeof word.horizontal === 'boolean'
+                    );
+                    
+                    if (!validData) {
+                        throw new Error('Invalid word data structure');
+                    }
+                    
+                    // 使用 Base64 编码数据并通过 URL 传递
+                    const encodedData = btoa(JSON.stringify(result));
+                    window.location.href = `game.html?data=${encodedData}`;
                 } catch (error) {
                     console.error('Puzzle generation failed:', error);
                     retryCount++;
                     if (retryCount < maxRetries) {
-                        console.log(`Retrying... (${retryCount}/${maxRetries})`);
-                        tryGenerate();
+                        setTimeout(() => tryGenerate(), 100);
                     } else {
-                        alert('Failed to generate puzzle after multiple attempts. Please try again.');
-                        location.reload();
+                        alert('Unable to generate puzzle. Please try again.');
+                        window.location.reload();
                     }
                 }
             }

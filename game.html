@@ -64,21 +64,30 @@
         
         // 从URL获取游戏数据
         function loadGameData() {
-            const params = new URLSearchParams(window.location.search);
-            const data = params.get('data');
-            if (data) {
-                try {
-                    gameData = JSON.parse(decodeURIComponent(data));
-                    displayGame(gameData);
-                    // 确保celebration一开始是隐藏的
-                    const celebration = document.getElementById('celebration');
-                    celebration.style.display = 'none';
-                    celebration.classList.remove('show');
-                } catch (error) {
-                    showStatus('Failed to load game data', true);
+            try {
+                // 从 URL 参数获取数据
+                const urlParams = new URLSearchParams(window.location.search);
+                const encodedData = urlParams.get('data');
+                
+                if (!encodedData) {
+                    throw new Error('No game data found');
                 }
-            } else {
-                showStatus('No game data found', true);
+
+                // 解码数据
+                const data = JSON.parse(atob(encodedData));
+                
+                if (!data || !data.grid || !data.words || data.words.length < 4) {
+                    throw new Error('Invalid game data');
+                }
+
+                gameData = data;
+                displayGame(gameData);
+            } catch (error) {
+                console.error('Failed to load game data:', error);
+                showStatus('Failed to load game. Returning to menu...', true);
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
             }
         }
 
