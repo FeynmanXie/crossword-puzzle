@@ -4,6 +4,8 @@ export class PuzzleGenerator {
         this.reset();
         this.maxAttempts = 100;
         this.debug = true; // 启用调试
+        this.MIN_WORDS = 4;  // 最少单词数
+        this.MAX_WORDS = 8;  // 最多单词数
     }
 
     reset() {
@@ -21,8 +23,9 @@ export class PuzzleGenerator {
     }
 
     generatePuzzle(words) {
-        if (!Array.isArray(words) || words.length < 2) {
-            throw new Error('At least 2 words are required');
+        // 确保单词数量在合理范围内
+        if (!Array.isArray(words) || words.length < this.MIN_WORDS || words.length > this.MAX_WORDS) {
+            throw new Error(`Words count must be between ${this.MIN_WORDS} and ${this.MAX_WORDS}`);
         }
 
         this.log('Starting puzzle generation with words:', words.map(w => w.text));
