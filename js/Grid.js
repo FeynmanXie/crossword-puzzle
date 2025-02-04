@@ -145,35 +145,35 @@ export class Grid {
     calculateIntersectionScore(word, letterIndex, placedWord, placedLetterIndex) {
         let score = 0;
 
-        // 倾向于在单词中间交叉
+        // 增加中间交叉的权重
         const wordMiddle = word.text.length / 2;
         const placedMiddle = placedWord.text.length / 2;
         const distanceFromMiddle = (Math.abs(letterIndex - wordMiddle) / word.text.length + 
                                   Math.abs(placedLetterIndex - placedMiddle) / placedWord.text.length) / 2;
-        score += 30 * (1 - distanceFromMiddle);
+        score += 40 * (1 - distanceFromMiddle);
 
-        // 避免在单词末尾交叉
-        if (letterIndex === 0 || letterIndex === word.text.length - 1) score -= 15;
-        if (placedLetterIndex === 0 || placedLetterIndex === placedWord.text.length - 1) score -= 15;
+        // 降低末尾交叉的惩罚
+        if (letterIndex === 0 || letterIndex === word.text.length - 1) score -= 10;
+        if (placedLetterIndex === 0 || placedLetterIndex === placedWord.text.length - 1) score -= 10;
 
-        // 平衡水平和垂直方向
+        // 增加方向平衡的权重
         const horizontalCount = this.placedWords.filter(w => w.horizontal).length;
         const verticalCount = this.placedWords.length - horizontalCount;
         if (placedWord.horizontal && horizontalCount > verticalCount) {
-            score += 10;
+            score += 15;
         } else if (!placedWord.horizontal && verticalCount > horizontalCount) {
-            score += 10;
+            score += 15;
         }
 
-        // 倾向于紧凑布局
+        // 增加紧凑布局的权重
         const centerRow = Math.floor(this.size / 2);
         const centerCol = Math.floor(this.size / 2);
         const distanceFromCenter = Math.abs(placedWord.row - centerRow) + Math.abs(placedWord.col - centerCol);
-        score += 20 * (1 - distanceFromCenter / this.size);
+        score += 30 * (1 - distanceFromCenter / this.size);
 
-        // 为潜在的交叉点加分
+        // 增加潜在交叉点的权重
         const remainingLetters = word.text.length - letterIndex - 1;
-        score += remainingLetters * 3;
+        score += remainingLetters * 5;
 
         return score;
     }
@@ -185,7 +185,7 @@ export class Grid {
         let minCol = this.size;
         let maxCol = 0;
 
-        // 首先根据已放置的单词计算边界
+        // 计算边界
         this.placedWords.forEach(word => {
             if (word.horizontal) {
                 minRow = Math.min(minRow, word.row);
@@ -200,8 +200,8 @@ export class Grid {
             }
         });
 
-        // 增加足够的边距
-        const padding = 2; // 增加到2格边距
+        // 增加边距
+        const padding = 3; // 增加边距
         minRow = Math.max(0, minRow - padding);
         maxRow = Math.min(this.size - 1, maxRow + padding);
         minCol = Math.max(0, minCol - padding);

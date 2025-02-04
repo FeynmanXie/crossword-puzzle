@@ -1,6 +1,6 @@
 // 运动主题填字游戏词条数据库
 export const sportsWords = [
-    // 5-6字母单词(增加交叉机会)
+    // 5-6字母单词
     {
         text: "PLAYER",
         hint: "A person who takes part in a sport"
@@ -13,6 +13,43 @@ export const sportsWords = [
         text: "SPORTS",
         hint: "Physical activities governed by rules"
     },
+    // 4字母单词(包含常见字母)
+    {
+        text: "TEAM",
+        hint: "A group of players working together"
+    },
+    {
+        text: "GAME",
+        hint: "A competitive sporting event"
+    },
+    {
+        text: "RACE",
+        hint: "A competition of speed"
+    },
+    {
+        text: "PLAY",
+        hint: "To take part in a sport"
+    },
+    {
+        text: "BALL",
+        hint: "A round object used in many sports"
+    },
+    {
+        text: "GOAL",
+        hint: "A scoring target in sports"
+    },
+    {
+        text: "AREA",
+        hint: "A specific section of the playing field"
+    },
+    {
+        text: "MATE",
+        hint: "A fellow player on your team"
+    },
+    {
+        text: "LANE",
+        hint: "A marked path for racing or swimming"
+    },
     {
         text: "COURT",
         hint: "A place where some sports are played"
@@ -24,31 +61,6 @@ export const sportsWords = [
     {
         text: "SCORE",
         hint: "To gain points in a game"
-    },
-    // 4字母单词(精选常用词)
-    {
-        text: "TEAM",
-        hint: "A group of players working together"
-    },
-    {
-        text: "GAME",
-        hint: "A competitive sporting event"
-    },
-    {
-        text: "BALL",
-        hint: "A round object used in many sports"
-    },
-    {
-        text: "GOAL",
-        hint: "A scoring target in sports"
-    },
-    {
-        text: "RACE",
-        hint: "A competition of speed"
-    },
-    {
-        text: "PLAY",
-        hint: "To take part in a sport"
     },
     {
         text: "TRAIN",
@@ -145,17 +157,5 @@ export const sportsWords = [
     {
         text: "TAPE",
         hint: "The finish line marker in races"
-    },
-    {
-        text: "LANE",
-        hint: "A marked path for racing or swimming"
-    },
-    {
-        text: "MATE",
-        hint: "A fellow player on your team"
-    },
-    {
-        text: "AREA",
-        hint: "A specific section of the playing field"
     }
 ]; 
