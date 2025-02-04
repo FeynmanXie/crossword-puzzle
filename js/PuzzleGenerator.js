@@ -6,6 +6,22 @@ export class PuzzleGenerator {
         this.debug = false; // 关闭调试
         this.MIN_WORDS = 4;  // 最少单词数
         this.MAX_WORDS = 8;  // 最多单词数
+        
+        // 添加设备检测
+        this.isTablet = this.detectTablet();
+    }
+
+    // 添加设备检测方法
+    detectTablet() {
+        // 检查是否是平板设备
+        const isTouch = ('ontouchstart' in window) || 
+                       (navigator.maxTouchPoints > 0) || 
+                       (navigator.msMaxTouchPoints > 0);
+                       
+        const isTabletSize = window.innerWidth >= 768 && 
+                            window.innerWidth <= 1024;
+                            
+        return isTouch && isTabletSize;
     }
 
     reset() {
@@ -54,7 +70,8 @@ export class PuzzleGenerator {
                         grid: {
                             grid: this.grid,
                             size: this.size,
-                            placedWords: this.placedWords
+                            placedWords: this.placedWords,
+                            isTablet: this.isTablet  // 添加设备信息
                         },
                         words: this.placedWords.map(word => ({
                             text: word.text,
